@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Estate Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            background: url('/static/p2.jpeg') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            width: 700px;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(255, 255, 255, 0.9); /* Slight transparency */
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .chat-header {
+            padding: 20px;
+            background-color: #9a9998;
+            color: #ffa611;
+            text-align: center;
+            font-size: 3rem; /* Increased font size */
+            font-weight: bold;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        .chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: scroll;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            background-color: white;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 15px;
+            font-size: 1.2rem; /* Adjusted font size */
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        #send-btn {
+            padding: 15px 25px;
+            font-size: 1.2rem; /* Adjusted font size */
+            background-color: #9a9998;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #send-btn:hover {
+            background-color: #545351;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 60%;
+            word-wrap: break-word;
+            font-size: 1.1rem; /* Adjusted font size */
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #d1f0ff;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background-color: #f1f1f1;
+        }
+
+        .house-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            background-color: #fff;
+        }
+
+        .house-card h4 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .house-card p {
+            margin: 5px 0;
+        }
+
+        .house-card .price {
+            font-weight: bold;
+        }
+
+        .emoji {
+            font-size: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 90vw;
+                height: 95vh;
+            }
+
+            #user-input, #send-btn {
+                font-size: 1rem;
+                padding: 10px;
+            }
+
+            .chat-header {
+                font-size: 1.5rem; /* Adjusted header font size */
+            }
+        }
+    </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">Real Estate Chatbot</div>
+    <div class="chat-box" id="chat-box">
+      <!-- Chat messages will appear here -->
+    </div>
+    <div class="input-area">
+      <input type="text" id="user-input" placeholder="Type your message..." />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('send-btn').addEventListener('click', sendMessage);
+
+    function sendMessage() {
+      const userInput = document.getElementById('user-input').value;
+      if (userInput.trim() === '') return;
+
+      // Display user message
+      const userMessage = document.createElement('div');
+      userMessage.classList.add('message', 'user-message');
+      userMessage.innerText = userInput;
+      document.getElementById('chat-box').appendChild(userMessage);
+
+      // Clear the input field
+      document.getElementById('user-input').value = '';
+
+      // Fetch bot response from the Flask API
+      fetch('/recommend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: userInput }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        const botMessage = document.createElement('div');
+        botMessage.classList.add('message', 'bot-message');
+        
+        if (data.message) {
+          botMessage.innerHTML = data.message;
+        } else {
+          let resultHTML = "<h3>Recommended Houses:</h3>";
+          data.forEach(item => {
+            resultHTML += `
+              <div class="house-card">
+                <h4>House in ${item.city}, ${item.state}</h4>
+                <p class="price">$${(item.price * 100000).toFixed(2)} 🏠</p>
+                <p>Category: ${item['Price Category']}</p>
+                <p>Bedrooms: ${item.bed} 🛏️</p>
+                <p>Bathrooms: ${item.bath} 🚿</p>
+                <p>Street: ${item.street}</p>
+              </div>
+            `;
+          });
+          botMessage.innerHTML = resultHTML;
+        }
+
+        document.getElementById('chat-box').appendChild(botMessage);
+        document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('chat-box').innerHTML = "Error processing the request.";
+      });
+    }
+  </script>
+</body>
+</html>
